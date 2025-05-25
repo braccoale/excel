@@ -7,10 +7,8 @@ from werkzeug.utils import secure_filename
 import traceback
 from flask_cors import CORS
 
-app = Flask(__name__)
-CORS(app, origins=["https://tigullio-excel-flow.lovable.app"])  # <--- AGGIUNGI QUESTO
-
-app = Flask(__name__)
+app = Flask(__name__)  # Solo UNA istanza!
+CORS(app, origins=["https://tigullio-excel-flow.lovable.app"])  # CORS abilitato sulla giusta istanza
 
 @app.route("/process_excel", methods=["POST"])
 def process_excel():
