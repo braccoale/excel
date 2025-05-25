@@ -4,38 +4,55 @@ import tempfile
 from datetime import datetime
 import os
 from werkzeug.utils import secure_filename
+import traceback
 
 app = Flask(__name__)
 
 @app.route("/process_excel", methods=["POST"])
 def process_excel():
-    if 'file' not in request.files:
-        return {"error": "Nessun file trovato"}, 400
+    try:
+        if 'file' not in request.files:
+            app.logger.error("Nessun file trovato nella richiesta")
+            return {"error": "Nessun file trovato"}, 400
 
-    file = request.files['file']
-    filename = secure_filename(file.filename)
+        file = request.files['file']
+        filename = secure_filename(file.filename)
+        app.logger.info(f"Ricevuto file: {filename}")
 
-    df = pd.read_excel(file, skiprows=7)
-    df = df[['Data', 'Descrizione', 'Importo']].dropna(subset=['Data', 'Descrizione', 'Importo'])
+        # Legge il file Excel saltando le prime 7 righe
+        df = pd.read_excel(file, skiprows=7)
+        app.logger.info("File Excel letto correttamente")
 
-    def convert_date(date):
-        if isinstance(date, str):
-            return datetime.strptime(date, "%m/%d/%Y").strftime("%d/%m/%Y")
-        return date.strftime("%d/%m/%Y")
+        # Filtra solo le righe con Data, Descrizione e Importo validi
+        df = df[['Data', 'Descrizione', 'Importo']].dropna(subset=['Data', 'Descrizione', 'Importo'])
 
-    df['Data Contabile'] = df['Data'].apply(convert_date)
-    df['Data'] = df['Data'].apply(convert_date)
-    df['Divisa'] = 'EUR'
-    df['Causale / Descrizione'] = df['Descrizione']
+        # Converte le date da MM/DD/YYYY a DD/MM/YYYY
+        def convert_date(date):
+            if isinstance(date, str):
+                return datetime.strptime(date, "%m/%d/%Y").strftime("%d/%m/%Y")
+            return date.strftime("%d/%m/%Y")
 
-    final_df = df[['Data Contabile', 'Data', 'Importo', 'Divisa', 'Causale / Descrizione']]
+        df['Data Contabile'] = df['Data'].apply(convert_date)
+        df['Data'] = df['Data'].apply(convert_date)
+        df['Divisa'] = 'EUR'
+        df['Causale / Descrizione'] = df['Descrizione']
 
-    output_name = f"CODIFICATO_{filename}"
-    output_path = os.path.join(tempfile.gettempdir(), output_name)
+        # Riordina e seleziona le colonne finali
+        final_df = df[['Data Contabile', 'Data', 'Importo', 'Divisa', 'Causale / Descrizione']]
 
-    final_df.to_excel(output_path, index=False)
+        # Prepara il nome del file di output con prefisso 'CODIFICATO'
+        output_name = f"CODIFICATO_{filename}"
+        output_path = os.path.join(tempfile.gettempdir(), output_name)
 
-    return send_file(output_path, as_attachment=True, download_name=output_name)
+        final_df.to_excel(output_path, index=False)
+        app.logger.info(f"File creato: {output_path}")
+
+        return send_file(output_path, as_attachment=True, download_name=output_name)
+
+    except Exception as e:
+        app.logger.error("Errore durante l'elaborazione del file:")
+        app.logger.error(traceback.format_exc())
+        return {"error": str(e)}, 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
