@@ -19,9 +19,9 @@ def process_excel():
         filename = secure_filename(file.filename)
         app.logger.info(f"Ricevuto file: {filename}")
 
-        # Legge il file Excel saltando le prime 7 righe
-        df = pd.read_excel(file, skiprows=7)
-        app.logger.info("File Excel letto correttamente")
+        # Legge il file Excel prendendo l'intestazione dalla riga 7 (header=6)
+        df = pd.read_excel(file, header=6)
+        app.logger.info(f"Colonne trovate: {df.columns.tolist()}")
 
         # Filtra solo le righe con Data, Descrizione e Importo validi
         df = df[['Data', 'Descrizione', 'Importo']].dropna(subset=['Data', 'Descrizione', 'Importo'])
