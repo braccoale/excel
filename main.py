@@ -8,7 +8,7 @@ import traceback
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})  # SOLO PER TEST
+CORS(app, origins=["https://tigullio-excel-flow.lovable.app"])  # <--- AGGIUNGI QUESTO
 
 app = Flask(__name__)
 
