@@ -5,6 +5,10 @@ from datetime import datetime
 import os
 from werkzeug.utils import secure_filename
 import traceback
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)
 
 app = Flask(__name__)
 
